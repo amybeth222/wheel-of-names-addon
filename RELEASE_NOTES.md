@@ -1,5 +1,14 @@
 # Release Notes
 
+## Wheel of Names v1.0.2
+Release date: 2026-04-24
+
+Bug fix: center image now displays correctly in the pop-up window.
+
+### Fixed
+- Center image now properly displays in the pop-up wheel window
+- Refactored image display logic for cleaner code and popup compatibility
+
 ## Wheel of Names v1.0.1
 Release date: 2026-04-24
 
