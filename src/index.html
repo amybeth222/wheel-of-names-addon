@@ -643,6 +643,42 @@ function displayCenterImage() {
   }
 }
 
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Failed to read image file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Failed to load image."));
+    img.src = src;
+  });
+}
+
+async function compressCenterImage(file) {
+  const rawDataUrl = await fileToDataUrl(file);
+  const img = await loadImage(rawDataUrl);
+  const maxSize = 420;
+  const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+  const width = Math.max(1, Math.round(img.width * scale));
+  const height = Math.max(1, Math.round(img.height * scale));
+
+  const offscreen = document.createElement("canvas");
+  offscreen.width = width;
+  offscreen.height = height;
+  const offCtx = offscreen.getContext("2d");
+  offCtx.drawImage(img, 0, 0, width, height);
+
+  // JPEG keeps localStorage payload small enough for popup sync.
+  return offscreen.toDataURL("image/jpeg", 0.82);
+}
+
 if (isPopupMode) {
   document.body.classList.add("popup-mode");
   canvas.width = 560;
@@ -935,16 +971,22 @@ uploadArea.addEventListener("click", e => {
   imgUpload.click();
 });
 
-imgUpload.addEventListener("change", () => {
+imgUpload.addEventListener("change", async () => {
   const file = imgUpload.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    state.centerImg = e.target.result;
+
+  try {
+    state.centerImg = await compressCenterImage(file);
     displayCenterImage();
-    savePopupState();
-  };
-  reader.readAsDataURL(file);
+    const saved = savePopupState();
+    if (!saved) {
+      winnerName.textContent = "Image too large to save. Please use a smaller image.";
+      winnerBanner.classList.add("show");
+    }
+  } catch (err) {
+    winnerName.textContent = "Could not process image. Try another file.";
+    winnerBanner.classList.add("show");
+  }
 });
 
 clearImgBtn.addEventListener("click", e => {
