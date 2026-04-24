@@ -951,12 +951,12 @@ clearImgBtn.addEventListener("click", e => {
   e.stopPropagation();
   state.centerImg = null;
   imgUpload.value = "";
-  uploadPreview.style.display = "none";
-  uploadPreview.src = "";
-  document.querySelector("#uploadArea .upload-icon").style.display = "block";
-  clearImgBtn.style.display = "none";
-  centerImg.style.display = "none";
-  displayCenterImage()ocument.getElementById("confettiCanvas");
+  displayCenterImage();
+  savePopupState();
+});
+
+// ─── CONFETTI ──────────────────────────────────────────────────────
+const confCanvas = document.getElementById("confettiCanvas");
 const confCtx    = confCanvas.getContext("2d");
 let confettiParts = [];
 
@@ -1007,9 +1007,9 @@ function animateConfetti() {
 renderPalette();
 renderNames();
 drawWheel(state.angle);
+displayCenterImage();
 
-if (state.centerImg) {
-  uploadPreview.src = state.centerImg;
-  uploadPreview.style.display = "block";
-  document.querySelector("#uploadArea .upload-icon").style.display = "none";
-displayCenterImage();/html>
+savePopupState();
+</script>
+</body>
+</html>
