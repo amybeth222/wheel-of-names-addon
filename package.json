@@ -1,0 +1,15 @@
+{
+  "name": "wheel-of-names-addon",
+  "version": "1.0.1",
+  "description": "Wheel of Names brings an interactive random picker into Adobe Express. Quickly import names, customize wheel colors, add a center graphic, and spin to select a winner with animated results.",
+  "scripts": {
+    "build": "webpack --mode production",
+    "start": "webpack serve --mode development"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
+  }
+}
