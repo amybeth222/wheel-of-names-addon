@@ -597,6 +597,8 @@ let pendingImageSavePromise = null;
 const defaultPopupBtnLabel = openPopupBtn.textContent;
 const isPopupMode = new URLSearchParams(window.location.search).get("popup") === "1";
 const POPUP_STATE_KEY = "wheel-of-names-popup-state";
+const POPUP_STATE_MSG = "WON_POPUP_STATE";
+const POPUP_ACK_MSG = "WON_POPUP_ACK";
 
 function setPopupButtonLoading(isLoading) {
   openPopupBtn.disabled = isLoading;
@@ -626,6 +628,23 @@ function loadPopupState() {
   } catch (err) {
     // Ignore malformed state.
   }
+}
+
+function getPopupStateSnapshot() {
+  return {
+    entries: state.entries,
+    activePalette: state.activePalette,
+    centerImg: state.centerImg,
+    angle: state.angle,
+  };
+}
+
+function applyPopupStateSnapshot(snapshot) {
+  if (!snapshot || !Array.isArray(snapshot.entries)) return;
+  state.entries = snapshot.entries;
+  state.activePalette = Number.isInteger(snapshot.activePalette) ? snapshot.activePalette : state.activePalette;
+  state.centerImg = snapshot.centerImg || null;
+  state.angle = typeof snapshot.angle === "number" ? snapshot.angle : state.angle;
 }
 
 function displayCenterImage() {
@@ -693,6 +712,23 @@ if (isPopupMode) {
   canvas.width = 560;
   canvas.height = 560;
   loadPopupState();
+
+  // In embedded hosts, popup storage can be partitioned. Accept state directly from opener.
+  window.addEventListener("message", event => {
+    if (event.origin !== window.location.origin) return;
+    if (!event.data || event.data.type !== POPUP_STATE_MSG) return;
+
+    applyPopupStateSnapshot(event.data.state);
+    renderPalette();
+    renderNames();
+    drawWheel(state.angle);
+    displayCenterImage();
+    savePopupState();
+
+    if (event.source && typeof event.source.postMessage === "function") {
+      event.source.postMessage({ type: POPUP_ACK_MSG }, event.origin);
+    }
+  });
 }
 
 // ─── WHEEL DRAWING ─────────────────────────────────────────────────
@@ -830,13 +866,41 @@ openPopupBtn.addEventListener("click", async () => {
   const popupWindow = window.open(
     popupUrl.toString(),
     "wheelPopupWindow",
-    "popup=yes,width=940,height=900,resizable=yes,scrollbars=no,noopener,noreferrer"
+    "popup=yes,width=940,height=900,resizable=yes,scrollbars=no"
   );
 
   if (!popupWindow) {
     winnerName.textContent = "Enable pop-ups to open the wheel window.";
     winnerBanner.classList.add("show");
+    return;
   }
+
+  const popupPayload = { type: POPUP_STATE_MSG, state: getPopupStateSnapshot() };
+  let tries = 0;
+  const maxTries = 30;
+  const sendPopupState = () => {
+    if (!popupWindow || popupWindow.closed) return;
+    popupWindow.postMessage(popupPayload, window.location.origin);
+  };
+
+  const onPopupAck = event => {
+    if (event.origin !== window.location.origin) return;
+    if (!event.data || event.data.type !== POPUP_ACK_MSG) return;
+    clearInterval(retryTimer);
+    window.removeEventListener("message", onPopupAck);
+  };
+
+  window.addEventListener("message", onPopupAck);
+  sendPopupState();
+  const retryTimer = setInterval(() => {
+    tries += 1;
+    if (tries >= maxTries || popupWindow.closed) {
+      clearInterval(retryTimer);
+      window.removeEventListener("message", onPopupAck);
+      return;
+    }
+    sendPopupState();
+  }, 120);
 });
 
 function announceWinner() {
