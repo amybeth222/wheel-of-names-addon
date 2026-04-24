@@ -594,8 +594,14 @@ const colorPicker  = document.getElementById("hiddenColorPicker");
 
 let pendingColorIdx = null;
 let pendingImageSavePromise = null;
+const defaultPopupBtnLabel = openPopupBtn.textContent;
 const isPopupMode = new URLSearchParams(window.location.search).get("popup") === "1";
 const POPUP_STATE_KEY = "wheel-of-names-popup-state";
+
+function setPopupButtonLoading(isLoading) {
+  openPopupBtn.disabled = isLoading;
+  openPopupBtn.textContent = isLoading ? "Saving image..." : defaultPopupBtnLabel;
+}
 
 function savePopupState() {
   try {
@@ -798,12 +804,15 @@ spinBtn.addEventListener("click", () => {
 
 openPopupBtn.addEventListener("click", async () => {
   if (pendingImageSavePromise) {
+    setPopupButtonLoading(true);
     winnerName.textContent = "Saving image... opening popup in a moment.";
     winnerBanner.classList.add("show");
     try {
       await pendingImageSavePromise;
     } catch (err) {
       // Error state already shown by the uploader.
+    } finally {
+      setPopupButtonLoading(false);
     }
   }
 
@@ -816,6 +825,8 @@ openPopupBtn.addEventListener("click", async () => {
 
   const popupUrl = new URL(window.location.href);
   popupUrl.searchParams.set("popup", "1");
+  // Force reload when reusing an existing named popup window.
+  popupUrl.searchParams.set("sync", Date.now().toString());
   const popupWindow = window.open(
     popupUrl.toString(),
     "wheelPopupWindow",
@@ -994,6 +1005,7 @@ imgUpload.addEventListener("change", async () => {
   const file = imgUpload.files[0];
   if (!file) return;
 
+  setPopupButtonLoading(true);
   pendingImageSavePromise = (async () => {
     try {
       state.centerImg = await compressCenterImage(file);
@@ -1006,6 +1018,8 @@ imgUpload.addEventListener("change", async () => {
     } catch (err) {
       winnerName.textContent = "Could not process image. Try another file.";
       winnerBanner.classList.add("show");
+    } finally {
+      setPopupButtonLoading(false);
     }
   })();
 
