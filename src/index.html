@@ -619,6 +619,30 @@ function loadPopupState() {
   }
 }
 
+function displayCenterImage() {
+  // Display center image on the wheel canvas
+  if (state.centerImg) {
+    centerImg.src = state.centerImg;
+    centerImg.style.display = "block";
+  } else {
+    centerImg.style.display = "none";
+  }
+  // In normal mode, also update the upload preview area
+  if (!isPopupMode) {
+    if (state.centerImg) {
+      uploadPreview.src = state.centerImg;
+      uploadPreview.style.display = "block";
+      document.querySelector("#uploadArea .upload-icon").style.display = "none";
+      clearImgBtn.style.display = "block";
+    } else {
+      uploadPreview.style.display = "none";
+      uploadPreview.src = "";
+      document.querySelector("#uploadArea .upload-icon").style.display = "block";
+      clearImgBtn.style.display = "none";
+    }
+  }
+}
+
 if (isPopupMode) {
   document.body.classList.add("popup-mode");
   canvas.width = 560;
@@ -917,12 +941,7 @@ imgUpload.addEventListener("change", () => {
   const reader = new FileReader();
   reader.onload = e => {
     state.centerImg = e.target.result;
-    uploadPreview.src = state.centerImg;
-    uploadPreview.style.display = "block";
-    document.querySelector("#uploadArea .upload-icon").style.display = "none";
-    clearImgBtn.style.display = "block";
-    centerImg.src = state.centerImg;
-    centerImg.style.display = "block";
+    displayCenterImage();
     savePopupState();
   };
   reader.readAsDataURL(file);
@@ -937,12 +956,7 @@ clearImgBtn.addEventListener("click", e => {
   document.querySelector("#uploadArea .upload-icon").style.display = "block";
   clearImgBtn.style.display = "none";
   centerImg.style.display = "none";
-  centerImg.src = "";
-  savePopupState();
-});
-
-// ─── CONFETTI ──────────────────────────────────────────────────────
-const confCanvas = document.getElementById("confettiCanvas");
+  displayCenterImage()ocument.getElementById("confettiCanvas");
 const confCtx    = confCanvas.getContext("2d");
 let confettiParts = [];
 
@@ -998,12 +1012,4 @@ if (state.centerImg) {
   uploadPreview.src = state.centerImg;
   uploadPreview.style.display = "block";
   document.querySelector("#uploadArea .upload-icon").style.display = "none";
-  clearImgBtn.style.display = "block";
-  centerImg.src = state.centerImg;
-  centerImg.style.display = "block";
-}
-
-savePopupState();
-</script>
-</body>
-</html>
+displayCenterImage();/html>
