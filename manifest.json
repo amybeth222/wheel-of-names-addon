@@ -1,0 +1,24 @@
+{
+  "id": "wheel-of-names-addon",
+  "name": "Wheel of Names",
+  "version": "1.0.1",
+  "manifestVersion": 2,
+  "requirements": {
+    "apps": [
+      {
+        "name": "Express",
+        "apiVersion": 2
+      }
+    ]
+  },
+  "entryPoints": [
+    {
+      "type": "panel",
+      "id": "panel1",
+      "label": {
+        "default": "Wheel of Names"
+      },
+      "main": "src/index.html"
+    }
+  ]
+}
