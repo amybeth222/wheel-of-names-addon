@@ -1,0 +1,14 @@
+{
+  "name": "wheel-of-names",
+  "version": "1.0.1",
+  "description": "Wheel of Names – Adobe Express Add-on",
+  "scripts": {
+    "clean": "ccweb-add-on-scripts clean",
+    "build": "ccweb-add-on-scripts build",
+    "start": "ccweb-add-on-scripts start",
+    "package": "ccweb-add-on-scripts package"
+  },
+  "devDependencies": {
+    "@adobe/ccweb-add-on-scripts": "latest"
+  }
+}
