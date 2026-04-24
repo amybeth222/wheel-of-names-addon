@@ -593,14 +593,17 @@ const centerImg    = document.getElementById("centerImgOverlay");
 const colorPicker  = document.getElementById("hiddenColorPicker");
 
 let pendingColorIdx = null;
+let pendingImageSavePromise = null;
 const isPopupMode = new URLSearchParams(window.location.search).get("popup") === "1";
 const POPUP_STATE_KEY = "wheel-of-names-popup-state";
 
 function savePopupState() {
   try {
     localStorage.setItem(POPUP_STATE_KEY, JSON.stringify(state));
+    return true;
   } catch (err) {
-    // Ignore storage failures and keep normal behavior.
+    // Saving can fail when storage quota is exceeded.
+    return false;
   }
 }
 
@@ -793,8 +796,24 @@ spinBtn.addEventListener("click", () => {
   requestAnimationFrame(frame);
 });
 
-openPopupBtn.addEventListener("click", () => {
-  savePopupState();
+openPopupBtn.addEventListener("click", async () => {
+  if (pendingImageSavePromise) {
+    winnerName.textContent = "Saving image... opening popup in a moment.";
+    winnerBanner.classList.add("show");
+    try {
+      await pendingImageSavePromise;
+    } catch (err) {
+      // Error state already shown by the uploader.
+    }
+  }
+
+  const saved = savePopupState();
+  if (!saved) {
+    winnerName.textContent = "Image too large to sync to popup. Try a smaller image.";
+    winnerBanner.classList.add("show");
+    return;
+  }
+
   const popupUrl = new URL(window.location.href);
   popupUrl.searchParams.set("popup", "1");
   const popupWindow = window.open(
@@ -975,18 +994,23 @@ imgUpload.addEventListener("change", async () => {
   const file = imgUpload.files[0];
   if (!file) return;
 
-  try {
-    state.centerImg = await compressCenterImage(file);
-    displayCenterImage();
-    const saved = savePopupState();
-    if (!saved) {
-      winnerName.textContent = "Image too large to save. Please use a smaller image.";
+  pendingImageSavePromise = (async () => {
+    try {
+      state.centerImg = await compressCenterImage(file);
+      displayCenterImage();
+      const saved = savePopupState();
+      if (!saved) {
+        winnerName.textContent = "Image too large to save. Please use a smaller image.";
+        winnerBanner.classList.add("show");
+      }
+    } catch (err) {
+      winnerName.textContent = "Could not process image. Try another file.";
       winnerBanner.classList.add("show");
     }
-  } catch (err) {
-    winnerName.textContent = "Could not process image. Try another file.";
-    winnerBanner.classList.add("show");
-  }
+  })();
+
+  await pendingImageSavePromise;
+  pendingImageSavePromise = null;
 });
 
 clearImgBtn.addEventListener("click", e => {
